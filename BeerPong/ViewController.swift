@@ -9,10 +9,13 @@
 import UIKit
 import SceneKit
 import ARKit
+import CoreMotion
 
-class ViewController: UIViewController, ARSCNViewDelegate {
+class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    
+    var ballNode: SCNNode!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,11 +26,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
         
-        // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let ballGeometry = SCNSphere(radius: 0.015)
+        ballNode = SCNNode(geometry: ballGeometry)
+        ballNode.position.z = -0.01
         
-        // Set the scene to the view
-        sceneView.scene = scene
+        sceneView.scene.rootNode.addChildNode(ballNode)
+        
+        let motionManager = CMMotionManager()
+        if motionManager.isDeviceMotionAvailable {
+            motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
+        } else {
+            print("Device motion not available")
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -62,6 +72,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         return node
     }
 */
+    
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        ballNode.position = SCNVector3Make(
+            frame.camera.transform[3].x,
+            frame.camera.transform[3].y,
+            frame.camera.transform[3].z)
+        
+        ballNode.eulerAngles = SCNVector3Make(
+            frame.camera.eulerAngles.x,
+            frame.camera.eulerAngles.y,
+            frame.camera.eulerAngles.z)
+    }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
